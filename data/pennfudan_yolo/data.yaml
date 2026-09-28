@@ -1,0 +1,7 @@
+path: D:/bridge-pedestrian-monitoring/bridge-pedestrian-monitoring/data/pennfudan_yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: person

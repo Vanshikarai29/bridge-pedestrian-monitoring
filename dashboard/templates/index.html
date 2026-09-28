@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bridge Occupancy Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>Bridge Occupancy Monitor</h1>
+          <p class="subtitle">Live pedestrian counting &amp; crowd-density alerting</p>
+        </div>
+      </div>
+      <div class="bridge-select">
+        <label for="bridgeId">Bridge</label>
+        <input id="bridgeId" value="bridge-1" spellcheck="false">
+        <span class="status-dot" id="connStatus" title="connection status"></span>
+      </div>
+    </header>
+
+    <section class="grid">
+
+      <div class="panel panel-occupancy">
+        <div class="panel-head">
+          <h2>Current Occupancy</h2>
+          <span class="pill" id="alertPill">nominal</span>
+        </div>
+        <div class="occupancy-readout">
+          <span class="occ-number" id="occNumber">&mdash;</span>
+          <span class="occ-of">/ <span id="occThreshold">&mdash;</span> threshold</span>
+        </div>
+        <div class="occ-bar-track">
+          <div class="occ-bar-fill" id="occBarFill"></div>
+        </div>
+        <form class="threshold-form" id="thresholdForm">
+          <label for="thresholdInput">Set alert threshold</label>
+          <input id="thresholdInput" type="number" min="1" placeholder="e.g. 40">
+          <button type="submit">Update</button>
+        </form>
+      </div>
+
+      <div class="panel panel-trend">
+        <div class="panel-head">
+          <h2>Footfall Trend</h2>
+          <span class="panel-hint" id="trendHint">last hour, 5-min buckets</span>
+        </div>
+        <canvas id="footfallChart" height="160"></canvas>
+      </div>
+
+      <div class="panel panel-alerts">
+        <div class="panel-head">
+          <h2>Alert Log</h2>
+        </div>
+        <ul class="alert-list" id="alertList">
+          <li class="empty-state">No alerts recorded yet.</li>
+        </ul>
+      </div>
+
+    </section>
+
+    <footer class="foot-note">
+      Polling <code id="apiRootLabel">/api</code> every 3s &middot;
+      Pipeline: YOLOv8 detector &rarr; ByteTrack tracker &rarr; virtual line-crossing counter &rarr; this dashboard
+    </footer>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
