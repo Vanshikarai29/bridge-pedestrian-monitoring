@@ -15,8 +15,10 @@ Thumbs.db
 # Local database
 *.db
 
-# Model weights (any .pt, including yolov8n.pt in the root)
-*.pt
+# Model weights
+yolov8n.pt
+runs/**/*.pt
+!weights/best.pt
 
 # Training outputs
 runs/
