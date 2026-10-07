@@ -133,7 +133,9 @@ def test_invalid_threshold_rejected(client):
 
 # ---------------------------------------------------------------- historical-data bucketing
 def test_footfall_buckets_group_by_time_window(client):
-    now = datetime.now(timezone.utc)
+    # now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    now = now - timedelta(minutes=now.minute % 5) + timedelta(minutes=1)
     post_event(client, direction=1, timestamp=now.isoformat())
     post_event(client, direction=1, timestamp=(now + timedelta(seconds=30)).isoformat())
     post_event(client, direction=-1, timestamp=(now + timedelta(minutes=6)).isoformat())

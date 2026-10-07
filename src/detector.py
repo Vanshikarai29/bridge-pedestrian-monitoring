@@ -1,4 +1,3 @@
-"""Thin wrapper around Ultralytics YOLOv8 restricted to the 'person' class."""
 from pathlib import Path
 
 from ultralytics import YOLO

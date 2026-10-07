@@ -17,12 +17,22 @@ Implements the exact rule from the paper's Section III-C / Eq. (1):
     set pixel area before the cross-product check runs at all -- this addresses small/distant
     false detections churning through many track identities (Section IV-B).
 
+Extensions over the paper (all backwards compatible):
+
+    * Direction: when a crossing fires, `last_direction` is set to the NEW side d_t.
+      Moving from the -1 side to the +1 side is "in" (+1); the reverse is "out" (-1).
+      `in_count`, `out_count` and `net_count` keep running totals.
+    * Hysteresis: with `hysteresis_px > 0`, a centroid closer than that many pixels to
+      the line counts as "on the line" and is ignored. A person standing or jittering on
+      the line is therefore no longer counted over and over. Default 0 = paper behaviour.
+
 The tracking itself (assigning stable track IDs across frames, including through brief
 occlusion) is delegated to Ultralytics' built-in ByteTrack implementation
 (see src/pipeline.py, which calls model.track(..., tracker='bytetrack.yaml')). This module
 only implements the counting logic that sits on top of already-tracked boxes -- it is
 detector/tracker agnostic and unit-testable in isolation (see tests/test_line_counter.py).
 """
+import math
 from dataclasses import dataclass, field
 
 from . import config as cfg
@@ -62,14 +72,24 @@ class LineCrossingCounter:
     line_b: tuple[float, float]
     min_bbox_area: float = cfg.MIN_BBOX_AREA_PX2
     track_age_threshold: int = cfg.TRACK_AGE_THRESHOLD_FRAMES
+    hysteresis_px: float = 0.0
     _tracks: dict = field(default_factory=dict)
+    in_count: int = 0
+    out_count: int = 0
+    last_direction: int = 0   # +1 / -1 for the most recent update() call that crossed, else 0
 
     def reset(self):
         self._tracks.clear()
+        self.in_count = 0
+        self.out_count = 0
+        self.last_direction = 0
 
     def update(self, track_id: int, bbox, frame_idx: int) -> bool:
         """Process one (track_id, bbox) observation at the given frame index.
-        Returns True iff this observation triggered a new line-crossing event."""
+        Returns True iff this observation triggered a new line-crossing event.
+        After a True return, `last_direction` holds +1 (in) or -1 (out)."""
+        self.last_direction = 0
+
         # Guard 1: minimum bounding-box area filter (A_min) -- discard small/distant
         # detections before they ever reach the cross-product check.
         if bbox_area(bbox) < self.min_bbox_area:
@@ -83,7 +103,15 @@ class LineCrossingCounter:
         cx, cy = bbox_centroid(bbox)
         xa, ya = self.line_a
         xb, yb = self.line_b
-        d_t = _sign((xb - xa) * (cy - ya) - (yb - ya) * (cx - xa))
+        cross = (xb - xa) * (cy - ya) - (yb - ya) * (cx - xa)
+
+        # Guard 2 (extension): dead zone around the line. A centroid within
+        # `hysteresis_px` of the line gets side 0 and is ignored below.
+        length = math.hypot(xb - xa, yb - ya) or 1.0
+        if abs(cross) / length < self.hysteresis_px:
+            d_t = 0
+        else:
+            d_t = _sign(cross)
 
         crossed = False
         track_age = frame_idx - state.first_seen_frame
@@ -95,6 +123,11 @@ class LineCrossingCounter:
         ):
             state.total_crossings += 1
             crossed = True
+            self.last_direction = d_t
+            if d_t > 0:
+                self.in_count += 1
+            else:
+                self.out_count += 1
 
         if d_t != 0:
             state.prev_side = d_t
@@ -104,6 +137,11 @@ class LineCrossingCounter:
     @property
     def total_crossings(self) -> int:
         return sum(t.total_crossings for t in self._tracks.values())
+
+    @property
+    def net_count(self) -> int:
+        """in minus out (what occupancy should change by)."""
+        return self.in_count - self.out_count
 
     @property
     def active_track_count(self) -> int:
