@@ -50,7 +50,11 @@ export default function FootfallChart({ bridgeId }) {
       .finally(() => setBusy(false))
   }, [bridgeId, win])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    const id = setInterval(load, 5000)   // re-fetch every 5 s
+    return () => clearInterval(id)
+  }, [load])
 
   const hasData = !busy && rows.length > 0
 
