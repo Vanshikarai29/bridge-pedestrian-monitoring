@@ -1,71 +1,84 @@
 import { fmtTime } from '../lib/utils.js'
 
 export default function Header({ status, lastUpdated, bridgeId, bridges, onBridgeChange, onRefresh, onReset }) {
-  const dot = {
-    ok:         'bg-teal-500',
-    err:        'bg-red-500',
-    connecting: 'bg-amber-500',
-  }[status] ?? 'bg-amber-500'
+  const isOk  = status === 'ok'
+  const isErr = status === 'err'
 
-  const label = { ok: 'Live', err: 'Offline', connecting: 'Connecting' }[status] ?? 'Connecting'
+  const allBridges = [...new Set(['bridge-1', ...(bridges ?? []).map(b => b.bridge_id), bridgeId])]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between gap-6 px-6">
+    <header style={{ background: 'var(--color-panel)', borderBottom: '1px solid var(--color-border)' }}
+      className="sticky top-0 z-50">
+      <div className="mx-auto flex h-12 max-w-screen-2xl items-center justify-between gap-4 px-5">
 
-        {/* Left: brand + bridge tabs */}
-        <div className="flex items-center gap-6 min-w-0">
-          {/* Logo mark */}
-          <div className="flex shrink-0 items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--color-teal)] to-[var(--color-teal-dim)]">
-              <svg className="h-4 w-4 text-[var(--color-bg)]" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M2 6h16v2H2zM2 6v8h2V6zM16 6v8h2V6zM2 14h16v2H2z"/>
-                <circle cx="10" cy="10" r="2"/>
-              </svg>
-            </div>
-            <span className="hidden text-sm font-semibold text-[var(--color-text-1)] sm:block">
-              Bridge Monitor
-            </span>
+        {/* Brand */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg"
+            style={{ background: 'linear-gradient(135deg,var(--color-teal),var(--color-teal-2))' }}>
+            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="var(--color-bg)" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M1 5h14M1 5v7M15 5v7M1 12h14M5 5v7M11 5v7"/>
+            </svg>
           </div>
-
-          {/* Bridge selector chips */}
-          <nav className="flex items-center gap-1 overflow-x-auto pb-0 scrollbar-none">
-            {[...new Set(['bridge-1', ...(bridges ?? []).map(b => b.bridge_id), bridgeId])].map(id => (
-              <button
-                key={id}
-                onClick={() => onBridgeChange(id)}
-                className={`whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
-                  id === bridgeId
-                    ? 'bg-[var(--color-teal)]/15 text-[var(--color-teal)] ring-1 ring-[var(--color-teal)]/30'
-                    : 'text-[var(--color-text-2)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-1)]'
-                }`}
-              >
-                {id}
-              </button>
-            ))}
-          </nav>
+          <span className="text-sm font-bold" style={{ color:'var(--color-t1)' }}>Bridge Monitor</span>
         </div>
 
-        {/* Right: timestamp + status + actions */}
-        <div className="flex shrink-0 items-center gap-3">
+        {/* Bridge chips */}
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {allBridges.map(id => {
+            const isActive = id === bridgeId
+            const hasAlert = (bridges ?? []).find(b => b.bridge_id === id)?.alert_active
+            return (
+              <button key={id} onClick={() => onBridgeChange(id)}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all"
+                style={isActive ? {
+                  background: 'rgba(0,229,204,.12)',
+                  color: 'var(--color-teal)',
+                  outline: '1px solid rgba(0,229,204,.3)',
+                } : {
+                  color: 'var(--color-t3)',
+                  background: 'transparent',
+                }}>
+                {hasAlert && <span className="h-1.5 w-1.5 rounded-full" style={{ background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />}
+                {id}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Right side */}
+        <div className="flex shrink-0 items-center gap-2">
           {lastUpdated && (
-            <span className="hidden font-mono text-[11px] text-[var(--color-text-3)] lg:block">
+            <span className="hidden font-mono text-[11px] lg:block" style={{ color:'var(--color-t3)' }}>
               {fmtTime(lastUpdated)}
             </span>
           )}
 
-          {/* Status pill */}
-          <div className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
-            <span className={`h-1.5 w-1.5 rounded-full ${dot} ${status === 'ok' ? '[animation:pulse-teal_2s_ease-in-out_infinite]' : ''}`} />
-            <span className={`text-[11px] font-semibold ${status === 'ok' ? 'text-[var(--color-teal)]' : status === 'err' ? 'text-[var(--color-red)]' : 'text-[var(--color-amber)]'}`}>
-              {label}
+          {/* Status */}
+          <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+            style={{ background:'var(--color-panel-2)', outline:'1px solid var(--color-border)' }}>
+            <span className="h-1.5 w-1.5 rounded-full"
+              style={{
+                background: isOk ? 'var(--color-teal)' : isErr ? 'var(--color-red)' : 'var(--color-amber)',
+                animation:  isOk ? 'pulse-teal 2s infinite' : isErr ? 'pulse-red 1.4s infinite' : 'blink-dot 1.2s infinite',
+              }} />
+            <span className="text-[11px] font-semibold"
+              style={{ color: isOk ? 'var(--color-teal)' : isErr ? 'var(--color-red)' : 'var(--color-amber)' }}>
+              {isOk ? 'Live' : isErr ? 'Offline' : 'Connecting'}
             </span>
           </div>
 
-          <button onClick={onRefresh} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-2)] transition hover:border-[var(--color-border-2)] hover:text-[var(--color-text-1)]">
+          <button onClick={onRefresh}
+            className="rounded-md px-3 py-1 text-xs font-medium transition-all"
+            style={{ background:'var(--color-panel-2)', color:'var(--color-t2)', outline:'1px solid var(--color-border)' }}
+            onMouseEnter={e => e.currentTarget.style.color='var(--color-t1)'}
+            onMouseLeave={e => e.currentTarget.style.color='var(--color-t2)'}>
             ↻ Refresh
           </button>
-          <button onClick={onReset} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-2)] transition hover:border-[var(--color-red)]/40 hover:text-[var(--color-red)]">
+          <button onClick={onReset}
+            className="rounded-md px-3 py-1 text-xs font-medium transition-all"
+            style={{ background:'var(--color-panel-2)', color:'var(--color-t3)', outline:'1px solid var(--color-border)' }}
+            onMouseEnter={e => { e.currentTarget.style.color='var(--color-red)'; e.currentTarget.style.outlineColor='rgba(255,82,82,.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color='var(--color-t3)'; e.currentTarget.style.outlineColor='var(--color-border)' }}>
             Reset
           </button>
         </div>

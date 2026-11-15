@@ -1,20 +1,40 @@
-import { getStatus, COLOR } from '../lib/utils.js'
+import { getStatus, PALETTE } from '../lib/utils.js'
 
-function Card({ label, value, sub, color = 'teal', icon }) {
-  const col = COLOR[color]
+function MetricCard({ label, value, sub, color = 'teal', icon, alert }) {
+  const c = PALETTE[color] ?? PALETTE.teal
   return (
-    <div
-      className="relative overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 transition-colors hover:border-[var(--color-border-2)]"
-      style={{ background: `linear-gradient(135deg, var(--color-surface-2) 0%, ${col.bg} 100%)` }}
-    >
-      <div className="pointer-events-none absolute -right-3 -top-3 h-14 w-14 rounded-full blur-xl" style={{ background: col.glow, opacity: 0.4 }} />
+    <div className="relative overflow-hidden rounded-2xl p-5 transition-all"
+      style={{
+        background: `linear-gradient(135deg, var(--color-panel) 0%, color-mix(in srgb, ${c} 6%, var(--color-panel)) 100%)`,
+        outline: `1px solid color-mix(in srgb, ${c} 20%, var(--color-border))`,
+        animation: 'fade-up .4s ease both',
+      }}>
+      {/* Glow blob */}
+      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl"
+        style={{ background: c, opacity: .15 }} />
+
       <div className="relative">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-3)]">{label}</span>
-          <span className="text-base opacity-70">{icon}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color:'var(--color-t3)' }}>
+            {label}
+          </span>
+          <span className="text-lg opacity-60">{icon}</span>
         </div>
-        <div className="font-mono text-3xl font-black" style={{ color: col.fill }}>{value}</div>
-        {sub && <div className="mt-1 text-[11px] text-[var(--color-text-3)]">{sub}</div>}
+
+        <div className="font-mono text-4xl font-black leading-none" style={{ color: c }}>
+          {value ?? '—'}
+        </div>
+
+        {sub && (
+          <div className="mt-2 text-[11px]" style={{ color:'var(--color-t3)' }}>{sub}</div>
+        )}
+
+        {alert && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
+            <span className="text-[10px] font-semibold" style={{ color:'var(--color-red)' }}>{alert}</span>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -23,47 +43,44 @@ function Card({ label, value, sub, color = 'teal', icon }) {
 export default function StatsRow({ occupancy, footfall, alerts }) {
   const occ  = occupancy?.occupancy ?? 0
   const thr  = occupancy?.threshold ?? 40
-  const { ratio } = getStatus(occ, thr)
+  const { pct, color } = getStatus(occ, thr)
 
-  // Aggregate footfall totals for the current window
-  const buckets = footfall?.buckets ?? []
-  const totalIn  = buckets.reduce((s, b) => s + (b.in ?? 0), 0)
+  const buckets  = footfall?.buckets ?? []
+  const totalIn  = buckets.reduce((s, b) => s + (b.in  ?? 0), 0)
   const totalOut = buckets.reduce((s, b) => s + (b.out ?? 0), 0)
   const net      = totalIn - totalOut
-
-  const activeAlerts = (alerts ?? []).filter(a => a.active).length
-
-  const capColor = ratio >= 1 ? 'red' : ratio >= 0.8 ? 'amber' : 'teal'
+  const active   = (alerts ?? []).filter(a => a.active).length
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Card
-        label="Pedestrians In"
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <MetricCard
+        label="On Bridge Now"
+        value={occ}
+        sub={`of ${thr} max · ${Math.round(pct)}% capacity`}
+        color={color}
+        icon="🧍"
+        alert={occ > thr ? `${occ - thr} over limit` : null}
+      />
+      <MetricCard
+        label="Entered (last 2h)"
         value={totalIn || '—'}
-        sub={`last ${footfall?.bucket_minutes ? Math.round((footfall.buckets?.length ?? 0) * footfall.bucket_minutes / 60 * 10) / 10 : 2}h`}
+        sub="crossing events"
         color="teal"
         icon="↑"
       />
-      <Card
-        label="Pedestrians Out"
+      <MetricCard
+        label="Exited (last 2h)"
         value={totalOut || '—'}
-        sub="same window"
+        sub="crossing events"
         color="blue"
         icon="↓"
       />
-      <Card
-        label="Net Flow"
-        value={totalIn || totalOut ? (net >= 0 ? `+${net}` : net) : '—'}
-        sub="in minus out"
-        color={net > 0 ? 'teal' : net < 0 ? 'amber' : 'blue'}
-        icon="⇆"
-      />
-      <Card
+      <MetricCard
         label="Active Alerts"
-        value={activeAlerts}
-        sub={activeAlerts === 0 ? 'all clear' : 'threshold breached'}
-        color={activeAlerts > 0 ? 'red' : 'teal'}
-        icon={activeAlerts > 0 ? '⚠' : '✓'}
+        value={active}
+        sub={active === 0 ? 'All clear' : 'Threshold breached'}
+        color={active > 0 ? 'red' : 'green'}
+        icon={active > 0 ? '⚠' : '✓'}
       />
     </div>
   )
