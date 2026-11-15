@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Surfaces ── */
+  --color-bg:        #07111d;
+  --color-panel:     #0d1e2f;
+  --color-panel-2:   #112233;
+  --color-panel-3:   #162840;
+  --color-border:    #1e3a52;
+  --color-border-2:  #2a4d6b;
+
+  /* ── Text ── */
+  --color-t1: #f0f6ff;
+  --color-t2: #7ea8c4;
+  --color-t3: #3d6480;
+
+  /* ── Accents ── */
+  --color-teal:   #00e5cc;
+  --color-teal-2: #009988;
+  --color-amber:  #ffb547;
+  --color-red:    #ff5252;
+  --color-blue:   #58a6ff;
+  --color-green:  #3fb950;
+
+  /* ── Fonts ── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+@keyframes pulse-teal {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,204,.55); }
+  60%       { box-shadow: 0 0 0 7px rgba(0,229,204,0); }
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,82,82,.6); }
+  60%       { box-shadow: 0 0 0 8px rgba(255,82,82,0); }
+}
+@keyframes spin-gauge {
+  from { stroke-dashoffset: var(--dash-start); }
+  to   { stroke-dashoffset: var(--dash-end); }
+}
+@keyframes fade-up {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes blink-dot {
+  0%,100% { opacity:1; }
+  50%      { opacity:.2; }
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-t1);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;   /* let App's main handle scrolling */
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 0% 0%,   rgba(0,229,204,.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 35% at 100% 100%, rgba(255,181,71,.04)  0%, transparent 55%);
+}
+
+/* #root height is now set via html,body,#root above — no extra rule needed */
+
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--color-border-2); border-radius:4px; }
