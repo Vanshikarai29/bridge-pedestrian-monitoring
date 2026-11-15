@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useDashboard } from './hooks/useDashboard.js'
-import Header        from './components/Header.jsx'
+import Header from './components/Header.jsx'
 import OccupancyCard from './components/OccupancyCard.jsx'
-import StatsRow      from './components/StatsRow.jsx'
+import StatsRow from './components/StatsRow.jsx'
 import FootfallChart from './components/FootfallChart.jsx'
-import AlertLog      from './components/AlertLog.jsx'
-import ResetModal    from './components/ResetModal.jsx'
+import AlertLog from './components/AlertLog.jsx'
+import ResetModal from './components/ResetModal.jsx'
 
 export default function App() {
-  const [bridgeId,  setBridgeId]  = useState('bridge-1')
+  const [bridgeId, setBridgeId] = useState('bridge-1')
   const [showReset, setShowReset] = useState(false)
 
   const { occupancy, footfall, alerts, bridges, status, lastUpdated, refresh } =
@@ -43,7 +43,7 @@ export default function App() {
         flexDirection: 'column',
         padding: '14px 16px',
         gap: 14,
-        minHeight: 0,          /* critical: prevents flex overflow blowout */
+        minHeight: 0,
       }}>
 
         {/* Alert banner */}
@@ -71,16 +71,13 @@ export default function App() {
         {/* Stats cards row */}
         <StatsRow occupancy={occupancy} footfall={footfall} alerts={alerts} />
 
-        {/* ── Main content: gauge LEFT, chart RIGHT ──
-            Use a fixed-min-height row so it always fills most of the viewport.
-            calc(100vh - header - banner - statsrow - alertlog - footer - gaps)
-            We use flex-grow here so it expands to fill leftover space.           */}
+        {/* Gauge + Chart: always side-by-side, fixed height */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.5fr)',
           gap: 14,
-          flexGrow: 1,           /* grow into remaining main height  */
-          minHeight: '340px',    /* floor so it's never too small     */
+          height: '380px',       /* fixed height — no grow/shrink fight */
+          flexShrink: 0,
         }}>
           <OccupancyCard occupancy={occupancy} bridgeId={bridgeId} onRefresh={refresh} />
           <FootfallChart bridgeId={bridgeId} />
