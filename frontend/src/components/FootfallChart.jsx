@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { fmtTime } from '../lib/utils.js'
 import { api } from '../lib/api.js'
@@ -13,71 +13,78 @@ const WINDOWS = [
   { label: '24h', hours: 24, mins: 60 },
 ]
 
-const CustomTooltip = ({ active, payload, label }) => {
+const Tip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
+  const inVal  = payload.find(p => p.dataKey === 'In')?.value  ?? 0
+  const outVal = payload.find(p => p.dataKey === 'Out')?.value ?? 0
   return (
-    <div className="rounded-xl border border-navy-400/60 bg-navy-700/95 p-3 text-xs shadow-xl backdrop-blur-sm">
-      <p className="mb-2 font-mono text-slate-dim">{label}</p>
-      {payload.map(p => (
-        <div key={p.name} className="flex items-center gap-2 py-0.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: p.fill }} />
-          <span className="text-slate-muted">{p.name}:</span>
-          <span className="font-mono font-bold" style={{ color: p.fill }}>{p.value}</span>
+    <div className="rounded-xl border border-[var(--color-border-2)] bg-[var(--color-surface-1)] p-3 shadow-2xl">
+      <p className="mb-2 font-mono text-[11px] text-[var(--color-text-3)]">{label}</p>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="h-2 w-2 rounded-full bg-[var(--color-teal)]" />
+          <span className="text-[var(--color-text-2)]">In:</span>
+          <span className="font-mono font-bold text-[var(--color-teal)]">{inVal}</span>
         </div>
-      ))}
-      <div className="mt-1.5 border-t border-navy-400/40 pt-1.5">
-        <span className="text-slate-dim">net: </span>
-        <span className="font-mono font-bold text-slate-text">
-          {(payload.find(p => p.name === 'In')?.value ?? 0) - (payload.find(p => p.name === 'Out')?.value ?? 0) >= 0 ? '+' : ''}
-          {(payload.find(p => p.name === 'In')?.value ?? 0) - (payload.find(p => p.name === 'Out')?.value ?? 0)}
-        </span>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="h-2 w-2 rounded-full bg-[#3d5570]" />
+          <span className="text-[var(--color-text-2)]">Out:</span>
+          <span className="font-mono font-bold text-[var(--color-text-2)]">{outVal}</span>
+        </div>
+        <div className="mt-1.5 border-t border-[var(--color-border)] pt-1.5 text-xs">
+          <span className="text-[var(--color-text-3)]">Net: </span>
+          <span className={`font-mono font-bold ${inVal - outVal >= 0 ? 'text-[var(--color-teal)]' : 'text-[var(--color-amber)]'}`}>
+            {inVal - outVal >= 0 ? '+' : ''}{inVal - outVal}
+          </span>
+        </div>
       </div>
     </div>
   )
 }
 
 export default function FootfallChart({ bridgeId }) {
-  const [win, setWin]   = useState(WINDOWS[1])
-  const [data, setData] = useState([])
+  const [win,     setWin]     = useState(WINDOWS[1])
+  const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true)
     api.getFootfall(bridgeId, win.mins, win.hours)
-      .then(res => {
-        const rows = (res.buckets ?? []).map(b => ({
-          time: fmtTime(b.bucket_start),
-          In:   b.in,
-          Out:  b.out,
-        }))
-        setData(rows)
-      })
-      .catch(() => setData([]))
+      .then(res => setRows((res.buckets ?? []).map(b => ({
+        time: fmtTime(b.bucket_start),
+        In:   b.in,
+        Out:  b.out,
+      }))))
+      .catch(() => setRows([]))
       .finally(() => setLoading(false))
   }, [bridgeId, win])
 
-  const isEmpty = !loading && data.length === 0
+  useEffect(() => { load() }, [load])
+
+  const hasData = !loading && rows.length > 0
 
   return (
-    <div className="rounded-2xl border border-navy-400/50 bg-navy-700/60 p-5 backdrop-blur-sm [animation:var(--animate-fade-up)]">
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-6">
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between gap-3 flex-wrap">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-dim">Footfall Trend</h2>
-          <p className="mt-0.5 text-[11px] text-slate-dim/60 font-mono">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--color-text-3)]">
+            Footfall Trend
+          </h2>
+          <p className="mt-1 text-[11px] text-[var(--color-text-3)]/60 font-mono">
             {win.mins}-min buckets · last {win.label}
           </p>
         </div>
-        {/* Window picker */}
-        <div className="flex gap-1 rounded-lg border border-navy-400/40 bg-navy-800/60 p-1">
+        {/* Window tabs */}
+        <div className="flex items-center gap-0.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-0.5">
           {WINDOWS.map(w => (
             <button
               key={w.label}
               onClick={() => setWin(w)}
               className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
                 w.label === win.label
-                  ? 'bg-teal-500 text-navy-900 shadow'
-                  : 'text-slate-dim hover:text-slate-muted'
+                  ? 'bg-[var(--color-teal)] text-[var(--color-bg)] shadow'
+                  : 'text-[var(--color-text-3)] hover:text-[var(--color-text-2)]'
               }`}
             >
               {w.label}
@@ -86,43 +93,45 @@ export default function FootfallChart({ bridgeId }) {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="relative h-56">
+      {/* Chart area */}
+      <div className="relative h-60">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-mono text-xs text-slate-dim [animation:var(--animate-blink)]">Loading…</span>
+            <span className="font-mono text-xs text-[var(--color-text-3)]">Loading…</span>
           </div>
         )}
-        {isEmpty && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <span className="text-2xl opacity-20">📊</span>
-            <span className="text-xs text-slate-dim">No crossings recorded in this window</span>
+        {!loading && !hasData && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div className="text-3xl opacity-15">📊</div>
+            <p className="text-sm font-medium text-[var(--color-text-3)]">No crossings recorded</p>
+            <p className="text-[11px] text-[var(--color-text-3)]/60">
+              Run the pipeline to generate data
+            </p>
           </div>
         )}
-        {!loading && !isEmpty && (
+        {hasData && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barCategoryGap="30%" barGap={2}>
-              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.04)" />
+            <BarChart data={rows} barCategoryGap="35%" barGap={2} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.03)" strokeDasharray="3 3" />
               <XAxis
                 dataKey="time"
-                tick={{ fill: '#5d7a94', fontSize: 10, fontFamily: 'Geist Mono,monospace' }}
+                tick={{ fill: 'var(--color-text-3)', fontSize: 10, fontFamily: 'Geist Mono,monospace' }}
                 axisLine={false} tickLine={false}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fill: '#5d7a94', fontSize: 10, fontFamily: 'Geist Mono,monospace' }}
+                tick={{ fill: 'var(--color-text-3)', fontSize: 10, fontFamily: 'Geist Mono,monospace' }}
                 axisLine={false} tickLine={false}
-                allowDecimals={false}
-                width={28}
+                allowDecimals={false} width={28}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+              <Tooltip content={<Tip />} cursor={{ fill: 'rgba(255,255,255,0.025)', radius: 4 }} />
               <Legend
-                wrapperStyle={{ fontSize: 11, color: '#9eb3c8', paddingTop: 10 }}
-                iconType="circle" iconSize={8}
+                wrapperStyle={{ fontSize: 11, color: 'var(--color-text-2)', paddingTop: 12 }}
+                iconType="circle" iconSize={7}
               />
-              <Bar dataKey="In"  fill="#2fd4c0" radius={[3,3,0,0]}
-                style={{ filter: 'drop-shadow(0 0 4px rgba(47,212,192,.4))' }} />
-              <Bar dataKey="Out" fill="#3d5570" radius={[3,3,0,0]} />
+              <Bar dataKey="In"  fill="var(--color-teal)" radius={[3,3,0,0]}
+                style={{ filter: 'drop-shadow(0 0 5px rgba(47,212,192,.35))' }} />
+              <Bar dataKey="Out" fill="#3d5570"           radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

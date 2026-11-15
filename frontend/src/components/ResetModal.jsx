@@ -7,50 +7,53 @@ export default function ResetModal({ bridgeId, onConfirm, onCancel }) {
 
   const confirm = async () => {
     setLoading(true); setErr('')
-    try {
-      await api.resetBridge(bridgeId)
-      onConfirm()
-    } catch (e) { setErr(e.message); setLoading(false) }
+    try { await api.resetBridge(bridgeId); onConfirm() }
+    catch (e) { setErr(e.message); setLoading(false) }
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70 backdrop-blur-md [animation:var(--animate-fade-up)]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      style={{ animation: 'fade-in .15s ease' }}
       onClick={onCancel}
     >
       <div
-        className="mx-4 w-full max-w-sm rounded-2xl border border-navy-400/50 bg-navy-700 p-6 shadow-2xl [animation:var(--animate-fade-up)]"
+        className="mx-4 w-full max-w-sm rounded-2xl border border-[var(--color-border-2)] bg-[var(--color-surface-2)] p-6 shadow-2xl"
+        style={{ animation: 'fade-in .2s ease' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Icon */}
-        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-crimson-400/10 ring-1 ring-crimson-400/30">
+        {/* Warning icon */}
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-red)]/10 ring-1 ring-[var(--color-red)]/25">
           <span className="text-lg">⚠</span>
         </div>
 
-        <h3 className="mb-2 text-base font-bold text-slate-text">Reset bridge data?</h3>
-        <p className="mb-5 text-sm leading-relaxed text-slate-muted">
-          This will <span className="font-semibold text-crimson-400">permanently delete</span> all
-          crossing events, occupancy counts, and alert history for{' '}
-          <code className="rounded bg-navy-600 px-1.5 py-0.5 font-mono text-teal-500">{bridgeId}</code>.
+        <h3 className="mb-2 text-base font-bold text-[var(--color-text-1)]">Reset bridge data?</h3>
+        <p className="mb-5 text-sm leading-relaxed text-[var(--color-text-2)]">
+          This permanently deletes all crossing events, occupancy history and alerts for{' '}
+          <code className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-1)] px-1.5 py-0.5 font-mono text-[var(--color-teal)] text-xs">
+            {bridgeId}
+          </code>.
           <br /><br />
-          Use this for demos or testing only. This cannot be undone.
+          Use this for demos or testing. <span className="font-semibold text-[var(--color-red)]">Cannot be undone.</span>
         </p>
 
         {err && (
-          <p className="mb-3 rounded-lg border border-crimson-400/30 bg-crimson-400/10 px-3 py-2 text-xs text-crimson-400">{err}</p>
+          <div className="mb-4 rounded-lg border border-[var(--color-red)]/25 bg-[var(--color-red)]/8 px-3 py-2 text-xs text-[var(--color-red)]">
+            {err}
+          </div>
         )}
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-navy-400/60 bg-navy-600/50 px-4 py-2 text-sm font-medium text-slate-muted hover:bg-navy-500/50 hover:text-slate-text transition-colors"
+            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-3)] px-4 py-2 text-sm font-medium text-[var(--color-text-2)] transition hover:border-[var(--color-border-2)] hover:text-[var(--color-text-1)]"
           >
             Cancel
           </button>
           <button
             onClick={confirm}
             disabled={loading}
-            className="rounded-lg bg-crimson-400 px-4 py-2 text-sm font-bold text-white hover:bg-crimson-500 active:scale-95 transition-all disabled:opacity-50"
+            className="rounded-lg bg-[var(--color-red)] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110 active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Resetting…' : 'Reset bridge'}
           </button>

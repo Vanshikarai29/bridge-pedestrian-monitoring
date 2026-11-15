@@ -1,53 +1,74 @@
 import { fmtTime } from '../lib/utils.js'
 
-const statusConfig = {
-  ok:         { dot: 'bg-teal-500 [animation:var(--animate-pulse-teal)]',   label: 'Live',         text: 'text-teal-500'   },
-  err:        { dot: 'bg-crimson-400 [animation:var(--animate-pulse-red)]', label: 'Disconnected', text: 'text-crimson-400' },
-  connecting: { dot: 'bg-amber-400 [animation:var(--animate-blink)]',       label: 'Connecting…',  text: 'text-amber-400'  },
-}
+export default function Header({ status, lastUpdated, bridgeId, bridges, onBridgeChange, onRefresh, onReset }) {
+  const dot = {
+    ok:         'bg-teal-500',
+    err:        'bg-red-500',
+    connecting: 'bg-amber-500',
+  }[status] ?? 'bg-amber-500'
 
-export default function Header({ status, lastUpdated }) {
-  const cfg = statusConfig[status] ?? statusConfig.connecting
+  const label = { ok: 'Live', err: 'Offline', connecting: 'Connecting' }[status] ?? 'Connecting'
 
   return (
-    <header className="sticky top-0 z-50 border-b border-navy-400/40 bg-navy-900/80 backdrop-blur-md">
-      <div className="mx-auto max-w-screen-xl px-6 py-3 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-surface-1)]/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-14 max-w-screen-2xl items-center justify-between gap-6 px-6">
 
-        {/* Brand */}
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Icon */}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-lg shadow-teal-800/40">
-            <svg className="h-5 w-5 text-navy-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 7h16M4 7v10M20 7v10M4 17h16"/>
-              <circle cx="12" cy="12" r="2"/>
-              <path d="M8 7v10M16 7v10"/>
-            </svg>
+        {/* Left: brand + bridge tabs */}
+        <div className="flex items-center gap-6 min-w-0">
+          {/* Logo mark */}
+          <div className="flex shrink-0 items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--color-teal)] to-[var(--color-teal-dim)]">
+              <svg className="h-4 w-4 text-[var(--color-bg)]" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 6h16v2H2zM2 6v8h2V6zM16 6v8h2V6zM2 14h16v2H2z"/>
+                <circle cx="10" cy="10" r="2"/>
+              </svg>
+            </div>
+            <span className="hidden text-sm font-semibold text-[var(--color-text-1)] sm:block">
+              Bridge Monitor
+            </span>
           </div>
-          <div className="min-w-0">
-            <h1 className="text-sm font-bold tracking-tight text-slate-text truncate">
-              Bridge Occupancy Monitor
-            </h1>
-            <p className="text-[11px] text-slate-dim hidden sm:block">
-              Live pedestrian counting &amp; crowd-density alerting
-            </p>
-          </div>
+
+          {/* Bridge selector chips */}
+          <nav className="flex items-center gap-1 overflow-x-auto pb-0 scrollbar-none">
+            {[...new Set(['bridge-1', ...(bridges ?? []).map(b => b.bridge_id), bridgeId])].map(id => (
+              <button
+                key={id}
+                onClick={() => onBridgeChange(id)}
+                className={`whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  id === bridgeId
+                    ? 'bg-[var(--color-teal)]/15 text-[var(--color-teal)] ring-1 ring-[var(--color-teal)]/30'
+                    : 'text-[var(--color-text-2)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-1)]'
+                }`}
+              >
+                {id}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Status cluster */}
-        <div className="flex items-center gap-4 shrink-0">
+        {/* Right: timestamp + status + actions */}
+        <div className="flex shrink-0 items-center gap-3">
           {lastUpdated && (
-            <span className="hidden md:block text-[11px] font-mono text-slate-dim">
-              Updated {fmtTime(lastUpdated)}
+            <span className="hidden font-mono text-[11px] text-[var(--color-text-3)] lg:block">
+              {fmtTime(lastUpdated)}
             </span>
           )}
-          <div className="flex items-center gap-2 rounded-full border border-navy-400/50 bg-navy-700/60 px-3 py-1.5">
-            <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
-            <span className={`text-[11px] font-semibold tracking-wide ${cfg.text}`}>
-              {cfg.label}
+
+          {/* Status pill */}
+          <div className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
+            <span className={`h-1.5 w-1.5 rounded-full ${dot} ${status === 'ok' ? '[animation:pulse-teal_2s_ease-in-out_infinite]' : ''}`} />
+            <span className={`text-[11px] font-semibold ${status === 'ok' ? 'text-[var(--color-teal)]' : status === 'err' ? 'text-[var(--color-red)]' : 'text-[var(--color-amber)]'}`}>
+              {label}
             </span>
           </div>
-        </div>
 
+          <button onClick={onRefresh} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-2)] transition hover:border-[var(--color-border-2)] hover:text-[var(--color-text-1)]">
+            ↻ Refresh
+          </button>
+          <button onClick={onReset} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-2)] transition hover:border-[var(--color-red)]/40 hover:text-[var(--color-red)]">
+            Reset
+          </button>
+        </div>
       </div>
     </header>
   )

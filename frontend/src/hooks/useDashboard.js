@@ -2,11 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../lib/api.js'
 
 export function useDashboard(bridgeId, intervalMs = 3000) {
-  const [occupancy,   setOccupancy]   = useState(null)
-  const [footfall,    setFootfall]    = useState(null)
-  const [alerts,      setAlerts]      = useState([])
-  const [bridges,     setBridges]     = useState([])
-  const [status,      setStatus]      = useState('connecting') // 'ok' | 'err' | 'connecting'
+  const [data,   setData]   = useState({ occupancy: null, footfall: null, alerts: [], bridges: [] })
+  const [status, setStatus] = useState('connecting')
   const [lastUpdated, setLastUpdated] = useState(null)
   const timer = useRef(null)
 
@@ -19,10 +16,7 @@ export function useDashboard(bridgeId, intervalMs = 3000) {
         api.getAlerts(bridgeId),
         api.getBridges(),
       ])
-      setOccupancy(occ)
-      setFootfall(ff)
-      setAlerts(al)
-      setBridges(br)
+      setData({ occupancy: occ, footfall: ff, alerts: al, bridges: br })
       setStatus('ok')
       setLastUpdated(new Date())
     } catch (e) {
@@ -31,12 +25,20 @@ export function useDashboard(bridgeId, intervalMs = 3000) {
     }
   }, [bridgeId])
 
+  const fetchFootfall = useCallback(async (mins, hours) => {
+    try {
+      const ff = await api.getFootfall(bridgeId, mins, hours)
+      setData(prev => ({ ...prev, footfall: ff }))
+    } catch {}
+  }, [bridgeId])
+
   useEffect(() => {
     setStatus('connecting')
+    setData({ occupancy: null, footfall: null, alerts: [], bridges: [] })
     fetchAll()
     timer.current = setInterval(fetchAll, intervalMs)
     return () => clearInterval(timer.current)
   }, [fetchAll, intervalMs])
 
-  return { occupancy, footfall, alerts, bridges, status, lastUpdated, refresh: fetchAll }
+  return { ...data, status, lastUpdated, refresh: fetchAll, fetchFootfall }
 }
