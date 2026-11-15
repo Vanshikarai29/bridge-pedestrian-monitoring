@@ -15,8 +15,16 @@ export default function App() {
     useDashboard(bridgeId, 3000)
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ background:'var(--color-bg)' }}>
+    /* Outer shell: exact viewport height, no overflow on root */
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'var(--color-bg)',
+      overflow: 'hidden',
+    }}>
 
+      {/* ── Sticky Header ── */}
       <Header
         status={status}
         lastUpdated={lastUpdated}
@@ -27,51 +35,73 @@ export default function App() {
         onReset={() => setShowReset(true)}
       />
 
-      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-screen-xl space-y-5">
+      {/* ── Scrollable main: flex:1 so it takes all remaining height ── */}
+      <main style={{
+        flex: 1,
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '14px 16px',
+        gap: 14,
+        minHeight: 0,          /* critical: prevents flex overflow blowout */
+      }}>
 
-          {/* ── Overcrowding banner ── */}
-          {occupancy?.alert_active && (
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3"
-              style={{
-                background:'rgba(255,82,82,.06)',
-                outline:'1px solid rgba(255,82,82,.3)',
-                animation:'fade-up .3s ease',
-              }}>
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
-              <p className="text-sm">
-                <span className="font-bold" style={{ color:'var(--color-red)' }}>Overcrowding alert active — </span>
-                <span style={{ color:'var(--color-t2)' }}>
-                  {occupancy.occupancy} people on bridge, threshold is {occupancy.threshold}
-                </span>
-              </p>
-            </div>
-          )}
-
-          {/* ── Row 1: 4 stat cards ── */}
-          <StatsRow occupancy={occupancy} footfall={footfall} alerts={alerts} />
-
-          {/* ── Row 2: Occupancy gauge + Footfall chart ── */}
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <OccupancyCard occupancy={occupancy} bridgeId={bridgeId} onRefresh={refresh} />
-            <FootfallChart bridgeId={bridgeId} />
+        {/* Alert banner */}
+        {occupancy?.alert_active && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 16px', borderRadius: 10,
+            background: 'rgba(255,82,82,.07)',
+            border: '1px solid rgba(255,82,82,.35)',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              width: 9, height: 9, borderRadius: '50%', flexShrink: 0,
+              background: 'var(--color-red)', animation: 'pulse-red 1.4s infinite',
+            }} />
+            <p style={{ fontSize: 13, lineHeight: 1.4 }}>
+              <strong style={{ color: 'var(--color-red)' }}>Overcrowding alert active — </strong>
+              <span style={{ color: 'var(--color-t2)' }}>
+                {occupancy.occupancy} people on bridge, threshold is {occupancy.threshold}
+              </span>
+            </p>
           </div>
+        )}
 
-          {/* ── Row 3: Alert log full width ── */}
-          <AlertLog alerts={alerts} />
+        {/* Stats cards row */}
+        <StatsRow occupancy={occupancy} footfall={footfall} alerts={alerts} />
 
+        {/* ── Main content: gauge LEFT, chart RIGHT ──
+            Use a fixed-min-height row so it always fills most of the viewport.
+            calc(100vh - header - banner - statsrow - alertlog - footer - gaps)
+            We use flex-grow here so it expands to fill leftover space.           */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.5fr)',
+          gap: 14,
+          flexGrow: 1,           /* grow into remaining main height  */
+          minHeight: '340px',    /* floor so it's never too small     */
+        }}>
+          <OccupancyCard occupancy={occupancy} bridgeId={bridgeId} onRefresh={refresh} />
+          <FootfallChart bridgeId={bridgeId} />
         </div>
+
+        {/* Alert log */}
+        <AlertLog alerts={alerts} />
+
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto px-6 py-3"
-        style={{ borderTop:'1px solid var(--color-border)', background:'var(--color-panel)' }}>
-        <div className="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between gap-2 font-mono text-[11px]"
-          style={{ color:'var(--color-t3)' }}>
-          <span>YOLOv8 → ByteTrack → virtual line counter → Flask API → React dashboard</span>
-          <span>Polling <code style={{ color:'var(--color-teal)' }}>/api</code> every 3 s</span>
-        </div>
+      {/* ── Footer ── */}
+      <footer style={{
+        flexShrink: 0,
+        padding: '8px 20px',
+        borderTop: '1px solid var(--color-border)',
+        background: 'var(--color-panel)',
+        display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
+        fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-t3)',
+      }}>
+        <span>YOLOv8 → ByteTrack → virtual line counter → Flask API → React</span>
+        <span>Polling <span style={{ color: 'var(--color-teal)' }}>/api</span> every 3 s</span>
       </footer>
 
       {showReset && (

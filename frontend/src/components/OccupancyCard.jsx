@@ -2,55 +2,45 @@ import { useState } from 'react'
 import { getStatus, PALETTE } from '../lib/utils.js'
 import { api } from '../lib/api.js'
 
-/** Full-circle SVG ring, capped at 100% */
 function GaugeRing({ pct, color }) {
   const c   = PALETTE[color] ?? PALETTE.teal
   const R   = 80
   const cx  = 100, cy = 100
-  const circ = 2 * Math.PI * R
-  const fill = circ * (pct / 100)
-  // Start at top (-90°)
+  const sweepDeg = (Math.min(pct, 100) / 100) * 360
   const startAngle = -90
+  const endAngle   = startAngle + sweepDeg
   const toXY = (deg) => ({
     x: cx + R * Math.cos((deg * Math.PI) / 180),
     y: cy + R * Math.sin((deg * Math.PI) / 180),
   })
-  const sweepDeg = (pct / 100) * 360
-  const endAngle = startAngle + sweepDeg
   const s = toXY(startAngle)
   const e = toXY(endAngle)
   const largeArc = sweepDeg > 180 ? 1 : 0
   const arcPath  = `M ${s.x} ${s.y} A ${R} ${R} 0 ${largeArc} 1 ${e.x} ${e.y}`
+  const isFullCircle = pct >= 100
 
   return (
-    <svg viewBox="0 0 200 200" className="w-full max-w-[220px] mx-auto">
-      {/* Background track */}
-      <circle cx={cx} cy={cy} r={R} fill="none"
-        stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
-
-      {/* Filled arc */}
-      {pct > 0 && pct < 100 && (
-        <path d={arcPath} fill="none" stroke={c} strokeWidth="12" strokeLinecap="round"
+    <svg viewBox="0 0 200 200" style={{ width:'100%', maxWidth:200, display:'block', margin:'0 auto' }}>
+      {/* Track */}
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="14" />
+      {/* Arc */}
+      {!isFullCircle && pct > 0 && (
+        <path d={arcPath} fill="none" stroke={c} strokeWidth="14" strokeLinecap="round"
           style={{ filter:`drop-shadow(0 0 10px ${c}88)`, transition:'all .8s cubic-bezier(.4,0,.2,1)' }} />
       )}
-      {/* Full circle when at/over 100% */}
-      {pct >= 100 && (
-        <circle cx={cx} cy={cy} r={R} fill="none" stroke={c} strokeWidth="12"
-          style={{ filter:`drop-shadow(0 0 12px ${c}99)` }} />
+      {isFullCircle && (
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={c} strokeWidth="14"
+          style={{ filter:`drop-shadow(0 0 14px ${c}99)` }} />
       )}
-
-      {/* Tick marks at 25% intervals */}
-      {[0, 90, 180, 270].map(deg => {
-        const inner = toXY_r(cx, cy, R - 10, deg - 90)
-        const outer = toXY_r(cx, cy, R + 2,  deg - 90)
-        return <line key={deg} x1={inner.x} y1={inner.y} x2={outer.x} y2={outer.y}
-          stroke="rgba(255,255,255,.1)" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Quarter tick marks */}
+      {[0,90,180,270].map(deg => {
+        const a = deg - 90
+        const ix = cx + (R-10)*Math.cos(a*Math.PI/180), iy = cy + (R-10)*Math.sin(a*Math.PI/180)
+        const ox = cx + (R+2) *Math.cos(a*Math.PI/180), oy = cy + (R+2) *Math.sin(a*Math.PI/180)
+        return <line key={deg} x1={ix} y1={iy} x2={ox} y2={oy} stroke="rgba(255,255,255,.12)" strokeWidth="2" strokeLinecap="round"/>
       })}
     </svg>
   )
-}
-function toXY_r(cx, cy, r, deg) {
-  return { x: cx + r * Math.cos((deg * Math.PI)/180), y: cy + r * Math.sin((deg * Math.PI)/180) }
 }
 
 function ThresholdForm({ bridgeId, current, onDone }) {
@@ -69,25 +59,38 @@ function ThresholdForm({ bridgeId, current, onDone }) {
   }
 
   return (
-    <div className="mt-6 rounded-xl p-4" style={{ background:'var(--color-panel-2)', outline:'1px solid var(--color-border)' }}>
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest" style={{ color:'var(--color-t3)' }}>
-        Set alert threshold
+    <div style={{ marginTop:'auto', paddingTop:16, borderTop:'1px solid var(--color-border)' }}>
+      <p style={{ marginBottom:8, fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-t3)' }}>
+        Alert threshold
       </p>
-      <form onSubmit={submit} className="flex gap-2">
-        <input type="number" min="1" value={val} onChange={e => setVal(e.target.value)}
+      <form onSubmit={submit} style={{ display:'flex', gap:8 }}>
+        <input
+          type="number" min="1" value={val}
+          onChange={e => setVal(e.target.value)}
           placeholder={`Current: ${current ?? '—'}`}
-          className="flex-1 min-w-0 rounded-lg px-3 py-2 font-mono text-sm outline-none transition"
-          style={{ background:'var(--color-bg)', border:'1px solid var(--color-border)', color:'var(--color-t1)' }}
-          onFocus={e  => e.target.style.borderColor = 'var(--color-teal)'}
-          onBlur={e   => e.target.style.borderColor = 'var(--color-border)'}
+          style={{
+            flex:1, minWidth:0, borderRadius:8,
+            padding:'8px 12px', fontFamily:'var(--font-mono)', fontSize:13,
+            background:'var(--color-bg)', color:'var(--color-t1)',
+            border:'1px solid var(--color-border)', outline:'none',
+            transition:'border-color .15s',
+          }}
+          onFocus={e  => e.target.style.borderColor='var(--color-teal)'}
+          onBlur={e   => e.target.style.borderColor='var(--color-border)'}
         />
-        <button type="submit" disabled={busy}
-          className="rounded-lg px-4 py-2 text-xs font-bold transition active:scale-95 disabled:opacity-50"
-          style={{ background:'var(--color-teal)', color:'var(--color-bg)' }}>
+        <button type="submit" disabled={busy} style={{
+          padding:'8px 16px', borderRadius:8, border:'none',
+          background:'var(--color-teal)', color:'var(--color-bg)',
+          fontSize:12, fontWeight:700, cursor:'pointer',
+          opacity: busy ? .5 : 1, transition:'opacity .15s, transform .1s',
+        }}
+          onMouseDown={e => e.currentTarget.style.transform='scale(.96)'}
+          onMouseUp={e   => e.currentTarget.style.transform='scale(1)'}
+        >
           {busy ? '…' : 'Set'}
         </button>
       </form>
-      {err && <p className="mt-1.5 text-[11px]" style={{ color:'var(--color-red)' }}>{err}</p>}
+      {err && <p style={{ marginTop:6, fontSize:11, color:'var(--color-red)' }}>{err}</p>}
     </div>
   )
 }
@@ -96,64 +99,82 @@ export default function OccupancyCard({ occupancy, bridgeId, onRefresh }) {
   const occ = occupancy?.occupancy ?? 0
   const thr = occupancy?.threshold ?? 40
   const { pct, color, label } = getStatus(occ, thr)
-  const c   = PALETTE[color]
+  const c = PALETTE[color]
 
   const badgeStyle = {
-    teal:  { background:'rgba(0,229,204,.1)',   color:'var(--color-teal)',  outline:'1px solid rgba(0,229,204,.25)'   },
-    amber: { background:'rgba(255,181,71,.1)',  color:'var(--color-amber)', outline:'1px solid rgba(255,181,71,.25)'  },
-    red:   { background:'rgba(255,82,82,.1)',   color:'var(--color-red)',   outline:'1px solid rgba(255,82,82,.25)'   },
-    green: { background:'rgba(63,185,80,.1)',   color:'var(--color-green)', outline:'1px solid rgba(63,185,80,.25)'   },
+    teal:  { background:'rgba(0,229,204,.1)',  color:'var(--color-teal)',  border:'1px solid rgba(0,229,204,.25)'  },
+    amber: { background:'rgba(255,181,71,.1)', color:'var(--color-amber)', border:'1px solid rgba(255,181,71,.25)' },
+    red:   { background:'rgba(255,82,82,.1)',  color:'var(--color-red)',   border:'1px solid rgba(255,82,82,.25)'  },
+    green: { background:'rgba(63,185,80,.1)',  color:'var(--color-green)', border:'1px solid rgba(63,185,80,.25)'  },
   }[color]
 
   return (
-    <div className="rounded-2xl p-6" style={{ background:'var(--color-panel)', outline:'1px solid var(--color-border)', animation:'fade-up .3s ease' }}>
-
-      {/* Header row */}
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color:'var(--color-t3)' }}>
+    <div style={{
+      borderRadius:16,
+      padding:20,
+      background:'var(--color-panel)',
+      border:'1px solid var(--color-border)',
+      display:'flex', flexDirection:'column',
+      animation:'fade-up .3s ease',
+    }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+        <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-t3)' }}>
           Current Occupancy
-        </h2>
-        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider" style={badgeStyle}>
+        </span>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:6, borderRadius:999, padding:'3px 10px', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', ...badgeStyle }}>
           {color === 'red' && (
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
           )}
           {label}
         </span>
       </div>
 
-      {/* Gauge + number */}
-      <div className="relative flex flex-col items-center">
+      {/* Ring + overlaid number */}
+      <div style={{ position:'relative', marginBottom:12 }}>
         <GaugeRing pct={pct} color={color} />
-
-        {/* Overlay the numbers in the centre */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono font-black leading-none"
-            style={{ fontSize:'clamp(2.5rem,6vw,4rem)', color: c, textShadow:`0 0 30px ${c}66`, transition:'color .5s, text-shadow .5s' }}>
+        {/* Overlay number in centre */}
+        <div style={{
+          position:'absolute', inset:0,
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          pointerEvents:'none',
+        }}>
+          <span style={{
+            fontFamily:'var(--font-mono)', fontWeight:900, lineHeight:1,
+            fontSize:'clamp(2rem,5vw,3.5rem)',
+            color: c, textShadow:`0 0 28px ${c}66`,
+            transition:'color .5s, text-shadow .5s',
+          }}>
             {occupancy ? occ : '—'}
           </span>
-          <span className="mt-1 font-mono text-sm" style={{ color:'var(--color-t3)' }}>
+          <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'var(--color-t3)', marginTop:4 }}>
             / {thr}
           </span>
-          <span className="mt-0.5 font-mono text-xs font-semibold" style={{ color: c }}>
+          <span style={{ fontFamily:'var(--font-mono)', fontSize:11, fontWeight:700, color:c, marginTop:2 }}>
             {Math.round(pct)}%{occ > thr ? ' ⚠' : ''}
           </span>
         </div>
       </div>
 
       {/* Fill bar */}
-      <div className="mt-4">
-        <div className="mb-1.5 flex justify-between text-[11px] font-mono" style={{ color:'var(--color-t3)' }}>
+      <div>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, fontFamily:'var(--font-mono)', color:'var(--color-t3)', marginBottom:6 }}>
           <span>capacity utilization</span>
-          <span style={{ color: c }}>{Math.round(pct)}%</span>
+          <span style={{ color:c }}>{Math.round(pct)}%</span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full" style={{ background:'var(--color-bg)' }}>
-          <div className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{ width:`${pct}%`, background:`linear-gradient(90deg,${c}80,${c})`, boxShadow:`0 0 12px ${c}55` }} />
+        <div style={{ height:6, borderRadius:3, background:'var(--color-bg)', overflow:'hidden' }}>
+          <div style={{
+            height:'100%', borderRadius:3,
+            width:`${pct}%`,
+            background:`linear-gradient(90deg,${c}70,${c})`,
+            boxShadow:`0 0 10px ${c}55`,
+            transition:'width .7s cubic-bezier(.4,0,.2,1)',
+          }} />
         </div>
         {occ > thr && (
-          <div className="mt-2 text-center font-mono text-xs font-bold" style={{ color:'var(--color-red)' }}>
+          <p style={{ marginTop:8, fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:'var(--color-red)', textAlign:'center' }}>
             +{occ - thr} people over limit
-          </div>
+          </p>
         )}
       </div>
 

@@ -50,12 +50,13 @@
 
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 
-html, body {
+html, body, #root {
   height: 100%;
   font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-t1);
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;   /* let App's main handle scrolling */
 }
 
 body {
@@ -64,7 +65,7 @@ body {
     radial-gradient(ellipse 50% 35% at 100% 100%, rgba(255,181,71,.04)  0%, transparent 55%);
 }
 
-#root { min-height:100vh; display:flex; flex-direction:column; }
+/* #root height is now set via html,body,#root above — no extra rule needed */
 
 ::-webkit-scrollbar { width:4px; height:4px; }
 ::-webkit-scrollbar-track { background:transparent; }

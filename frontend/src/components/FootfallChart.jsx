@@ -15,21 +15,20 @@ const ChartTooltip = ({ active, payload, label }) => {
   const inV  = payload.find(p => p.dataKey==='In')?.value  ?? 0
   const outV = payload.find(p => p.dataKey==='Out')?.value ?? 0
   return (
-    <div className="rounded-xl p-3 text-xs shadow-2xl"
-      style={{ background:'var(--color-panel-3)', outline:'1px solid var(--color-border-2)', minWidth:120 }}>
-      <p className="mb-2 font-mono" style={{ color:'var(--color-t3)' }}>{label}</p>
-      <div className="space-y-1">
-        <div className="flex justify-between gap-4">
+    <div style={{ background:'var(--color-panel-3)', border:'1px solid var(--color-border-2)', borderRadius:10, padding:'10px 12px', fontSize:12, minWidth:110 }}>
+      <p style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--color-t3)', marginBottom:8 }}>{label}</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:16 }}>
           <span style={{ color:'var(--color-t2)' }}>In</span>
-          <span className="font-mono font-bold" style={{ color:'var(--color-teal)' }}>{inV}</span>
+          <span style={{ fontFamily:'var(--font-mono)', fontWeight:700, color:'var(--color-teal)' }}>{inV}</span>
         </div>
-        <div className="flex justify-between gap-4">
+        <div style={{ display:'flex', justifyContent:'space-between', gap:16 }}>
           <span style={{ color:'var(--color-t2)' }}>Out</span>
-          <span className="font-mono font-bold" style={{ color:'var(--color-t2)' }}>{outV}</span>
+          <span style={{ fontFamily:'var(--font-mono)', fontWeight:700, color:'var(--color-t2)' }}>{outV}</span>
         </div>
-        <div className="flex justify-between gap-4 border-t pt-1" style={{ borderColor:'var(--color-border)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:16, borderTop:'1px solid var(--color-border)', paddingTop:6, marginTop:2 }}>
           <span style={{ color:'var(--color-t3)' }}>Net</span>
-          <span className="font-mono font-bold" style={{ color: inV-outV>=0 ? 'var(--color-teal)' : 'var(--color-amber)' }}>
+          <span style={{ fontFamily:'var(--font-mono)', fontWeight:700, color: inV-outV>=0 ? 'var(--color-teal)' : 'var(--color-amber)' }}>
             {inV-outV>=0?'+':''}{inV-outV}
           </span>
         </div>
@@ -56,27 +55,31 @@ export default function FootfallChart({ bridgeId }) {
   const hasData = !busy && rows.length > 0
 
   return (
-    <div className="rounded-2xl p-6" style={{ background:'var(--color-panel)', outline:'1px solid var(--color-border)', animation:'fade-up .4s ease' }}>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div style={{
+      borderRadius:16, padding:20,
+      background:'var(--color-panel)', border:'1px solid var(--color-border)',
+      display:'flex', flexDirection:'column',
+      animation:'fade-up .4s ease',
+    }}>
+      {/* Header */}
+      <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, marginBottom:20 }}>
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color:'var(--color-t3)' }}>
+          <p style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-t3)' }}>
             Footfall Trend
-          </h2>
-          <p className="mt-0.5 font-mono text-[11px]" style={{ color:'var(--color-t3)', opacity:.6 }}>
+          </p>
+          <p style={{ fontSize:11, fontFamily:'var(--font-mono)', color:'var(--color-t3)', opacity:.6, marginTop:2 }}>
             {win.mins}-min buckets · last {win.label}
           </p>
         </div>
-
-        {/* Window switcher */}
-        <div className="flex items-center gap-0.5 rounded-lg p-0.5"
-          style={{ background:'var(--color-bg)', outline:'1px solid var(--color-border)' }}>
+        {/* Window tabs */}
+        <div style={{ display:'flex', gap:2, background:'var(--color-bg)', border:'1px solid var(--color-border)', borderRadius:8, padding:3 }}>
           {WINDOWS.map(w => (
             <button key={w.label} onClick={() => setWin(w)}
-              className="rounded-md px-3 py-1 text-xs font-semibold transition-all"
-              style={w.label===win.label ? {
-                background:'var(--color-teal)', color:'var(--color-bg)',
-              } : {
-                color:'var(--color-t3)',
+              style={{
+                padding:'4px 12px', borderRadius:6, border:'none',
+                fontSize:11, fontWeight:700, cursor:'pointer', transition:'all .15s',
+                background: w.label===win.label ? 'var(--color-teal)' : 'transparent',
+                color:       w.label===win.label ? 'var(--color-bg)'  : 'var(--color-t3)',
               }}>
               {w.label}
             </button>
@@ -84,35 +87,34 @@ export default function FootfallChart({ bridgeId }) {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="relative h-64">
+      {/* Chart fills remaining space */}
+      <div style={{ flex:1, minHeight:200, position:'relative' }}>
         {busy && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-mono text-xs" style={{ color:'var(--color-t3)', animation:'blink-dot 1.2s infinite' }}>Loading…</span>
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'var(--color-t3)', animation:'blink-dot 1.2s infinite' }}>Loading…</span>
           </div>
         )}
         {!busy && !hasData && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-            <div className="text-4xl opacity-10">📊</div>
-            <p className="text-sm font-medium" style={{ color:'var(--color-t2)' }}>No crossings recorded</p>
-            <p className="text-xs" style={{ color:'var(--color-t3)' }}>Run the detection pipeline to generate data</p>
+          <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>
+            <div style={{ fontSize:36, opacity:.1 }}>📊</div>
+            <p style={{ fontSize:14, fontWeight:500, color:'var(--color-t2)' }}>No crossings recorded</p>
+            <p style={{ fontSize:12, color:'var(--color-t3)' }}>Run the detection pipeline to generate data</p>
           </div>
         )}
         {hasData && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rows} barCategoryGap="38%" barGap={2}
-              margin={{ top:4, right:0, left:-20, bottom:0 }}>
+            <BarChart data={rows} barCategoryGap="38%" barGap={2} margin={{ top:4, right:0, left:-20, bottom:0 }}>
               <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.03)" strokeDasharray="4 4" />
               <XAxis dataKey="time" axisLine={false} tickLine={false} interval="preserveStartEnd"
-                tick={{ fill:'var(--color-t3)', fontSize:10, fontFamily:'JetBrains Mono,monospace' }} />
+                tick={{ fill:'var(--color-t3)', fontSize:10, fontFamily:'var(--font-mono)' }} />
               <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={28}
-                tick={{ fill:'var(--color-t3)', fontSize:10, fontFamily:'JetBrains Mono,monospace' }} />
+                tick={{ fill:'var(--color-t3)', fontSize:10, fontFamily:'var(--font-mono)' }} />
               <Tooltip content={<ChartTooltip />} cursor={{ fill:'rgba(255,255,255,0.025)', radius:4 }} />
               <Legend wrapperStyle={{ fontSize:11, color:'var(--color-t2)', paddingTop:14 }}
                 iconType="circle" iconSize={6} />
               <Bar dataKey="In"  fill="var(--color-teal)" radius={[3,3,0,0]}
                 style={{ filter:'drop-shadow(0 0 6px rgba(0,229,204,.4))' }} />
-              <Bar dataKey="Out" fill="var(--color-border-2)" radius={[3,3,0,0]} />
+              <Bar dataKey="Out" fill="#2a4d6b" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

@@ -3,36 +3,41 @@ import { getStatus, PALETTE } from '../lib/utils.js'
 function MetricCard({ label, value, sub, color = 'teal', icon, alert }) {
   const c = PALETTE[color] ?? PALETTE.teal
   return (
-    <div className="relative overflow-hidden rounded-2xl p-5 transition-all"
-      style={{
-        background: `linear-gradient(135deg, var(--color-panel) 0%, color-mix(in srgb, ${c} 6%, var(--color-panel)) 100%)`,
-        outline: `1px solid color-mix(in srgb, ${c} 20%, var(--color-border))`,
-        animation: 'fade-up .4s ease both',
-      }}>
-      {/* Glow blob */}
-      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl"
-        style={{ background: c, opacity: .15 }} />
+    <div style={{
+      position:'relative', overflow:'hidden',
+      borderRadius:14, padding:'16px 18px',
+      background:`linear-gradient(135deg, var(--color-panel) 0%, color-mix(in srgb, ${c} 7%, var(--color-panel)) 100%)`,
+      border:`1px solid color-mix(in srgb, ${c} 20%, var(--color-border))`,
+      animation:'fade-up .35s ease both',
+    }}>
+      {/* glow */}
+      <div style={{
+        position:'absolute', top:-16, right:-16,
+        width:64, height:64, borderRadius:'50%',
+        background:c, opacity:.18, filter:'blur(20px)',
+        pointerEvents:'none',
+      }} />
 
-      <div className="relative">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color:'var(--color-t3)' }}>
+      <div style={{ position:'relative' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+          <span style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-t3)' }}>
             {label}
           </span>
-          <span className="text-lg opacity-60">{icon}</span>
+          <span style={{ fontSize:18, opacity:.55 }}>{icon}</span>
         </div>
 
-        <div className="font-mono text-4xl font-black leading-none" style={{ color: c }}>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize:36, fontWeight:900, lineHeight:1, color:c }}>
           {value ?? '—'}
         </div>
 
         {sub && (
-          <div className="mt-2 text-[11px]" style={{ color:'var(--color-t3)' }}>{sub}</div>
+          <div style={{ marginTop:6, fontSize:11, color:'var(--color-t3)' }}>{sub}</div>
         )}
 
         {alert && (
-          <div className="mt-2 flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
-            <span className="text-[10px] font-semibold" style={{ color:'var(--color-red)' }}>{alert}</span>
+          <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--color-red)', animation:'pulse-red 1.4s infinite' }} />
+            <span style={{ fontSize:10, fontWeight:700, color:'var(--color-red)' }}>{alert}</span>
           </div>
         )}
       </div>
@@ -48,15 +53,18 @@ export default function StatsRow({ occupancy, footfall, alerts }) {
   const buckets  = footfall?.buckets ?? []
   const totalIn  = buckets.reduce((s, b) => s + (b.in  ?? 0), 0)
   const totalOut = buckets.reduce((s, b) => s + (b.out ?? 0), 0)
-  const net      = totalIn - totalOut
   const active   = (alerts ?? []).filter(a => a.active).length
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div style={{
+      display:'grid',
+      gridTemplateColumns:'repeat(4, minmax(0, 1fr))',
+      gap:12,
+    }}>
       <MetricCard
         label="On Bridge Now"
         value={occ}
-        sub={`of ${thr} max · ${Math.round(pct)}% capacity`}
+        sub={`of ${thr} max · ${Math.round(pct)}% full`}
         color={color}
         icon="🧍"
         alert={occ > thr ? `${occ - thr} over limit` : null}
