@@ -12,6 +12,26 @@ pip install -r requirements.txt
 python data/fix_data_yaml.py          # fixes the bundled dataset's path for your machine
 ```
 
+### Build the React dashboard (Node.js v18+ required, run once after cloning)
+
+```bash
+cd frontend
+npm install
+npm run build      # outputs to dashboard/static/react/ (git-ignored)
+cd ..
+```
+
+### Frontend dev server (hot-reload, proxies API to :5000)
+
+```bash
+# Terminal 1 — Flask API
+source venv/bin/activate && python backend/run.py
+
+# Terminal 2 — Vite dev server
+cd frontend && npm run dev
+# open http://localhost:5173
+```
+
 ## 1. See it work in ~2 minutes (no GPU, no training)
 
 ```bash
@@ -128,6 +148,8 @@ pytest tests/test_line_counter.py -v      # 7 line-crossing logic tests only
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 python data/fix_data_yaml.py
+# build the React dashboard (once)
+cd frontend && npm install && npm run build && cd ..
 pytest tests/ -v
 python backend/run.py &
 python -m src.pipeline --mock-detections sample_videos/synthetic_bridge_ground_truth.json
